@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Robot Control</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+    }
+    #control-panel {
+      width: 300px;
+      margin: 40px auto;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    }
+    #control-panel button {
+      width: 100px;
+      height: 40px;
+      margin: 10px;
+      font-size: 18px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      background-color: #4CAF50;
+      color: #fff;
+      cursor: pointer;
+    }
+    #control-panel button:hover {
+      background-color: #3e8e41;
+    }
+  </style>
+</head>
+<body>
+  <div id="control-panel">
+    <h1>Robot Control</h1>
+    <button id="left-btn">Left</button>
+    <button id="right-btn">Right</button>
+    <button id="stop-btn">Stop</button>
+    <p id="direction-indicator">Direction: Unknown</p>
+    <div id="speed-buttons">
+      <button class="speed-btn" data-speed="0">Stop</button>
+      <button class="speed-btn" data-speed="255">Full Speed</button>
+      <!-- Add more buttons as needed -->
+    </div>
+  </div>
+
+  <script>
+    const leftBtn = document.getElementById('left-btn');
+    const rightBtn = document.getElementById('right-btn');
+    const stopBtn = document.getElementById('stop-btn');
+    const directionIndicator = document.getElementById('direction-indicator');
+    const speedButtons = document.querySelectorAll('.speed-btn');
+
+    leftBtn.addEventListener('click', () => {
+        sendCommand('L');
+        directionIndicator.textContent = 'Direction: Left';
+    });
+
+    rightBtn.addEventListener('click', () => {
+        sendCommand('R');
+        directionIndicator.textContent = 'Direction: Right';
+    });
+
+    stopBtn.addEventListener('click', () => {
+        sendCommand('S');
+        directionIndicator.textContent = 'Direction: Stopped';
+    });
+
+    speedButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const speed = button.getAttribute('data-speed');
+            sendSpeed(speed);
+        });
+    });
+
+    function sendCommand(command) {
+        fetch('/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ command: command })
+        })
+        .then(response => {
+            if (response.ok) {
+                console.log(`Command sent successfully: ${command}`);
+            } else {
+                console.error(`Error sending command: ${response.status}`);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+
+    function sendSpeed(speed) {
+        fetch('/speed', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ speed: speed })
+        })
+        .then(response => {
+            if (response.ok) {
+                console.log(`Speed set successfully: ${speed}`);
+            } else {
+                console.error(`Error setting speed: ${response.status}`);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+        });
+    }
+  </script>
+</body>
+</html>

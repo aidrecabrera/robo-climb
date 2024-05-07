@@ -1,14 +1,17 @@
 /**
- * ROBOCLIMB: IR Proximity Sensor and L298N Motor Driver Control with 3-Position Switch
+ * ROBOCLIMB: IR Proximity Sensor and L298N Motor Driver Control with 3-Position Switch and Web Control
  *
- * DISCALIMER: The verbose comments are for the group members to understand the code better
+ * DISCLAIMER: The verbose comments are for the group members to understand the code better
  * since they have no prior experience with programming. The comments are not necessary for
  * the code to function properly. The code is written in a way that it is self-explanatory.
  *
  * This code is designed to control a robot with two motors and an IR proximity sensor.
  * The robot can move left, right, or stop based on the position of a 3-position switch.
  * If an obstacle is detected by the IR proximity sensor, the robot will stop moving.
+ * Additionally, the robot can be controlled using commands from a Python server.
  */
+
+#include <SoftwareSerial.h>
 
 // Pin definitions
 const uint8_t kProximitySensorPin = 2; // IR proximity sensor is connected to digital pin 2
@@ -32,6 +35,12 @@ const uint8_t kDirectionSwitchRightPin = 4;  // Right pin of the 3-position swit
 const uint8_t kMotorStopSpeed = 0;  // Motor stop speed is 0 (stopped)
 const uint8_t kMotorMaxSpeed = 255; // Motor maximum speed is 255 (full speed)
 
+// Web control serial communication
+const uint8_t kWebControlRxPin = 10; // Web control RX pin is connected to digital pin 10
+const uint8_t kWebControlTxPin = 11; // Web control TX pin is connected to digital pin 11
+
+SoftwareSerial webControlSerial(kWebControlRxPin, kWebControlTxPin); // Create a software serial object for web control communication
+
 void setup()
 {
     // Initialize digital pins
@@ -47,6 +56,10 @@ void setup()
     pinMode(kDirectionSwitchLeftPin, INPUT_PULLUP);   // Set switch left pin as input with internal pull-up resistor
     pinMode(kDirectionSwitchRightPin, INPUT_PULLUP);  // Set switch right pin as input with internal pull-up resistor
 
+    // Initialize web control serial communication
+    webControlSerial.begin(9600);
+    Serial.begin(9600);
+
     // Initialize motors to stopped state
     stopMotors(); // Call the stopMotors function to stop the motors initially
 }
@@ -55,6 +68,10 @@ void loop()
 {
     // Read the state of the proximity sensor
     bool obstacleDetected = !digitalRead(kProximitySensorPin); // obstacleDetected will be true if an obstacle is detected
+
+    // Print IR status
+    Serial.print("IR Status: ");
+    Serial.println(obstacleDetected ? "Obstacle Detected" : "No Obstacle");
 
     if (obstacleDetected)
     {
@@ -72,39 +89,56 @@ void loop()
         if (leftSwitchState && !rightSwitchState)
         {
             // If the switch is in the left position
-            moveLeft(); // Call the moveLeft function to move the robot left
+            moveLeft(kMotorMaxSpeed); // Call the moveLeft function to move the robot left
         }
         else if (!leftSwitchState && rightSwitchState)
         {
             // If the switch is in the right position
-            moveRight(); // Call the moveRight function to move the robot right
+            moveRight(kMotorMaxSpeed); // Call the moveRight function to move the robot right
         }
         else
         {
             // If the switch is in the middle position
             stopMotors(); // Call the stopMotors function to stop the robot
         }
+
+        // Check for web control commands
+        if (webControlSerial.available() > 0)
+        {
+            char command = webControlSerial.read();
+            Serial.println(command); // Print the received command to serial monitor
+
+            if (command == 'L')
+            {
+                moveLeft(kMotorMaxSpeed); // Move left at maximum speed
+            }
+            else if (command == 'R')
+            {
+                moveRight(kMotorMaxSpeed); // Move right at maximum speed
+            }
+            else if (command == 'S')
+            {
+                stopMotors(); // Stop the robot
+            }
+        }
     }
 
     delay(100); // Wait for 100 milliseconds (0.1 second) before checking again
 }
 
-void moveLeft()
-{
-    setMotorSpeed(kMotorMaxSpeed, kMotorMaxSpeed); // Set the speed of both motors to maximum
 
-    // Turn on the motors in the left direction
+void moveLeft(uint8_t speed)
+{
+    analogWrite(kLeftMotorEnablePin, speed);    // Set the speed of the left motor
     digitalWrite(kLeftMotorForwardPin, LOW);    // Set the left motor forward pin to LOW
     digitalWrite(kLeftMotorBackwardPin, HIGH);  // Set the left motor backward pin to HIGH
     digitalWrite(kRightMotorForwardPin, LOW);   // Set the right motor forward pin to LOW
     digitalWrite(kRightMotorBackwardPin, HIGH); // Set the right motor backward pin to HIGH
 }
 
-void moveRight()
+void moveRight(uint8_t speed)
 {
-    setMotorSpeed(kMotorMaxSpeed, kMotorMaxSpeed); // Set the speed of both motors to maximum
-
-    // Turn on the motors in the right direction
+    analogWrite(kRightMotorEnablePin, speed);  // Set the speed of the right motor
     digitalWrite(kLeftMotorForwardPin, HIGH);  // Set the left motor forward pin to HIGH
     digitalWrite(kLeftMotorBackwardPin, LOW);  // Set the left motor backward pin to LOW
     digitalWrite(kRightMotorForwardPin, HIGH); // Set the right motor forward pin to HIGH
@@ -113,17 +147,10 @@ void moveRight()
 
 void stopMotors()
 {
-    setMotorSpeed(kMotorStopSpeed, kMotorStopSpeed); // Set the speed of both motors to stop
-
-    digitalWrite(kLeftMotorForwardPin, LOW);   // Set the left motor forward pin to LOW
-    digitalWrite(kLeftMotorBackwardPin, LOW);  // Set the left motor backward pin to LOW
-    digitalWrite(kRightMotorForwardPin, LOW);  // Set the right motor forward pin to LOW
-    digitalWrite(kRightMotorBackwardPin, LOW); // Set the right motor backward pin to LOW
-}
-
-// This function sets the speed of the left and right motors
-void setMotorSpeed(uint8_t leftSpeed, uint8_t rightSpeed)
-{
-    analogWrite(kLeftMotorEnablePin, leftSpeed);   // Set the speed of the left motor
-    analogWrite(kRightMotorEnablePin, rightSpeed); // Set the speed of the right motor
+    analogWrite(kLeftMotorEnablePin, kMotorStopSpeed);  // Set the speed of the left motor to 0
+    analogWrite(kRightMotorEnablePin, kMotorStopSpeed); // Set the speed of the right motor to 0
+    digitalWrite(kLeftMotorForwardPin, LOW);            // Set the left motor forward pin to LOW
+    digitalWrite(kLeftMotorBackwardPin, LOW);           // Set the left motor backward pin to LOW
+    digitalWrite(kRightMotorForwardPin, LOW);           // Set the right motor forward pin to LOW
+    digitalWrite(kRightMotorBackwardPin, LOW);          // Set the right motor backward pin to LOW
 }
