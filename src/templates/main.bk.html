@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Robot Control</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        #control-panel {
+            width: 300px;
+            margin: 40px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        }
+        #control-panel button, #control-panel input {
+            width: 100px;
+            height: 40px;
+            margin: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+        #control-panel button:hover, #control-panel input:hover {
+            background-color: #3e8e41;
+        }
+        #control-panel input[type="text"] {
+            width: 200px;
+            height: 30px;
+            margin: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="control-panel">
+        <h1>Robot Control</h1>
+        <button id="left-btn">Left</button>
+        <button id="right-btn">Right</button>
+        <button id="stop-btn">Stop</button>
+        <p id="direction-indicator">Direction: Unknown</p>
+        <div id="speed-buttons">
+            <button class="speed-btn" data-speed="0">Stop</button>
+            <button class="speed-btn" data-speed="128">Half Speed</button>
+            <button class="speed-btn" data-speed="255">Full Speed</button>
+        </div>
+        <div id="com-port-control">
+            <h2>Set COM Port</h2>
+            <input type="text" id="com-port-input" placeholder="Enter COM Port">
+            <button id="set-com-port-btn">Set COM Port</button>
+        </div>
+    </div>
+
+    <script>
+        const directionIndicator = document.getElementById('direction-indicator');
+        const speedButtons = document.querySelectorAll('.speed-btn');
+
+        document.getElementById('control-panel').addEventListener('click', event => {
+            if (event.target.tagName === 'BUTTON' && event.target.id) {
+                const command = event.target.id.replace('-btn', '').toUpperCase().charAt(0);
+                sendCommand(command);
+                directionIndicator.textContent = `Direction: ${event.target.textContent}`;
+            }
+        });
+
+        speedButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const speed = button.getAttribute('data-speed');
+                sendSpeed(speed);
+            });
+        });
+
+        document.getElementById('set-com-port-btn').addEventListener('click', () => {
+            const comPort = document.getElementById('com-port-input').value;
+            setComPort(comPort);
+        });
+
+        function sendCommand(command) {
+            fetch('/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ command: command })
+            })
+            .then(response => response.ok ? console.log(`Command sent: ${command}`) : console.error(`Error: ${response.status}`))
+            .catch(error => console.error('Error:', error));
+        }
+
+        function sendSpeed(speed) {
+            fetch('/speed', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ speed: speed })
+            })
+            .then(response => response.ok ? console.log(`Speed set: ${speed}`) : console.error(`Error: ${response.status}`))
+            .catch(error => console.error('Error:', error));
+        }
+
+        function setComPort(comPort) {
+            fetch('/set_com_port', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ com_port: comPort })
+            })
+            .then(response => response.ok ? console.log(`COM port set to: ${comPort}`) : console.error(`Error: ${response.status}`))
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>

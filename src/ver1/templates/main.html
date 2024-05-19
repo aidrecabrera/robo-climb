@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Robot Control</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        #control-panel {
+            width: 90%;
+            max-width: 400px;
+            margin: 20px;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #333;
+        }
+        #control-panel button, #control-panel input {
+            display: block;
+            width: calc(100% - 20px);
+            height: 40px;
+            margin: 10px auto;
+            font-size: 18px;
+            border: none;
+            border-radius: 10px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        #control-panel button:hover, #control-panel input:hover {
+            background-color: #0056b3;
+        }
+        #control-panel input[type="text"] {
+            height: 30px;
+            font-size: 16px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        #direction-indicator {
+            font-size: 16px;
+            color: #666;
+            margin: 10px 0;
+        }
+        #speed-buttons {
+            display: flex;
+            justify-content: space-around;
+            gap: 4px;
+            margin-left: 10px;
+            margin-right: 10px;
+        }
+        .speed-btn {
+            flex: 1;
+            margin: 0 5px;
+        }
+
+        .com-port-input {
+            margin-left: 20px;
+            margin-right: 20px;
+            color: #f0f2f5;
+        }
+        @media (max-width: 480px) {
+            #control-panel {
+                width: 95%;
+                padding: 15px;
+            }
+            #control-panel button, #control-panel input {
+                width: calc(100% - 10px);
+                font-size: 16px;
+                height: 36px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="control-panel">
+        <h1>Robotic Climber</h1>
+        <button id="left-btn">Left</button>
+        <button id="right-btn">Right</button>
+        <button id="stop-btn">Stop</button>
+        <p id="direction-indicator">Direction: Unknown</p>
+        <div id="speed-buttons">
+            <button class="speed-btn" data-speed="0">Stop</button>
+            <button class="speed-btn" data-speed="128">Half Speed</button>
+            <button class="speed-btn" data-speed="255">Full Speed</button>
+        </div>
+        <div id="com-port-control">
+            <h2>Set COM Port</h2>
+            <input type="text" id="com-port-input" placeholder="Enter COM Port">
+            <button id="set-com-port-btn">Set COM Port</button>
+        </div>
+    </div>
+
+    <script>
+        const directionIndicator = document.getElementById('direction-indicator');
+        const speedButtons = document.querySelectorAll('.speed-btn');
+
+        document.getElementById('control-panel').addEventListener('click', event => {
+            if (event.target.tagName === 'BUTTON' && event.target.id) {
+                const command = event.target.id.replace('-btn', '').toUpperCase().charAt(0);
+                sendCommand(command);
+                directionIndicator.textContent = `Direction: ${event.target.textContent}`;
+            }
+        });
+
+        speedButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const speed = button.getAttribute('data-speed');
+                sendSpeed(speed);
+            });
+        });
+
+        document.getElementById('set-com-port-btn').addEventListener('click', () => {
+            const comPort = document.getElementById('com-port-input').value;
+            setComPort(comPort);
+        });
+
+        function sendCommand(command) {
+            fetch('/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ command: command })
+            })
+            .then(response => response.ok ? console.log(`Command sent: ${command}`) : console.error(`Error: ${response.status}`))
+            .catch(error => console.error('Error:', error));
+        }
+
+        function sendSpeed(speed) {
+            fetch('/speed', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ speed: speed })
+            })
+            .then(response => response.ok ? console.log(`Speed set: ${speed}`) : console.error(`Error: ${response.status}`))
+            .catch(error => console.error('Error:', error));
+        }
+
+        function setComPort(comPort) {
+            fetch('/set_com_port', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ com_port: comPort })
+            })
+            .then(response => response.ok ? console.log(`COM port set to: ${comPort}`) : console.error(`Error: ${response.status}`))
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>
